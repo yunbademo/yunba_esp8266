@@ -38,7 +38,7 @@ endif
 #
 
 INCLUDES := $(INCLUDES) -I $(PDIR)include
-INCLUDES += -I ./ -I./MQTTClient-C/src -I./MQTTPacket/src -I./MQTTClient-C/src/FreeRTOS
+INCLUDES += -I ./ -I ../mqtt/MQTTClient/ -I ../mqtt/MQTTPacket/
 PDIR := ../$(PDIR)
 sinclude $(PDIR)Makefile
 

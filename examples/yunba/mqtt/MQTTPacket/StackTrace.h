@@ -18,7 +18,8 @@
 #ifndef STACKTRACE_H_
 #define STACKTRACE_H_
 
-#include <stdio.h>
+//#include <stdio.h>
+#include "esp_common.h"
 #define NOSTACKTRACE 1
 
 #if defined(NOSTACKTRACE)

@@ -22,7 +22,8 @@ GEN_IMAGES= eagle.app.v6.out
 GEN_BINS= eagle.app.v6.bin
 SPECIAL_MKTARGETS=$(APP_MKTARGETS)
 SUBDIRS=    \
-	user
+	user    \
+	mqtt	
 
 endif # } PDIR
 
@@ -45,7 +46,8 @@ ifeq ($(FLAVOR),release)
 endif
 
 COMPONENTS_eagle.app.v6 = \
-	user/libuser.a
+	user/libuser.a  \
+	mqtt/libmqtt.a
 
 LINKFLAGS_eagle.app.v6 = \
 	-L$(SDK_PATH)/lib        \
@@ -66,7 +68,6 @@ LINKFLAGS_eagle.app.v6 = \
 	-lmain	\
 	-lfreertos	\
 	-llwip	\
-	-lsmartconfig \
 	$(DEP_LIBS_eagle.app.v6)					\
 	-Wl,--end-group
 

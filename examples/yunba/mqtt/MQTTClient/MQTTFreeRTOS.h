@@ -17,16 +17,21 @@
 #if !defined(MQTTFreeRTOS_H)
 #define MQTTFreeRTOS_H
 
-#include "FreeRTOS.h"
-#include "FreeRTOS_Sockets.h"
-#include "FreeRTOS_IP.h"
+//#include "FreeRTOS.h"
+#include "freertos/FreeRTOS.h"
+#include "freertos/task.h"
+
+//#include "FreeRTOS_Sockets.h"
+//#include "FreeRTOS_IP.h"
 #include "semphr.h"
 #include "task.h"
 
 typedef struct Timer 
 {
-	TickType_t xTicksToWait;
-	TimeOut_t xTimeOut;
+//	TickType_t xTicksToWait;
+	portTickType xTicksToWait;
+//	TimeOut_t xTimeOut;
+	xTimer xTimeOut;
 } Timer;
 
 typedef struct Network Network;
@@ -47,7 +52,9 @@ int TimerLeftMS(Timer*);
 
 typedef struct Mutex
 {
-	SemaphoreHandle_t sem;
+//	SemaphoreHandle_t sem;
+	xSemaphoreHandle sem;
+
 } Mutex;
 
 void MutexInit(Mutex*);

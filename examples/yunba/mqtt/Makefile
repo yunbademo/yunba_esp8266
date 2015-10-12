@@ -12,7 +12,10 @@
 #     a generated lib/image xxx.a ()
 #
 ifndef PDIR
-GEN_LIBS = libuser.a
+UP_EXTRACT_DIR = ..
+GEN_LIBS = libmqtt.a
+COMPONENTS_libsample = MQTTClient/MQTTClient.a	\
+                       MQTTPacket/MQTTPacket.a
 endif
 
 
