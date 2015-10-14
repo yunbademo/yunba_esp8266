@@ -19,6 +19,8 @@
 
 #include "MQTTClient.h"
 
+#define MQTT_TASK 1
+
 #define server_ip "192.168.101.142"
 #define server_port 9669
 
@@ -57,7 +59,7 @@ smartconfig_done(sc_status status, void *pdata)
                 memcpy(phone_ip, (uint8*)pdata, 4);
                 printf("Phone ip: %d.%d.%d.%d\n",phone_ip[0],phone_ip[1],phone_ip[2],phone_ip[3]);
             }
-            smartconfig_stop();
+        //    smartconfig_stop();
             break;
     }
 	
@@ -66,9 +68,117 @@ smartconfig_done(sc_status status, void *pdata)
 void ICACHE_FLASH_ATTR
 smartconfig_task(void *pvParameters)
 {
-    smartconfig_start(smartconfig_done);
+  //  smartconfig_start(smartconfig_done);
     
     vTaskDelete(NULL);
+}
+
+void messageArrived(MessageData* data)
+{
+	printf("Message arrived on topic %.*s: %.*s\n", data->topicName->lenstring.len, data->topicName->lenstring.data,
+			data->message->payloadlen, data->message->payload);
+}
+
+void setup_wifi(void)
+{
+	char *ssid = "yunba.io";
+	char *pass = "123456789";
+
+	struct station_config config;
+	wifi_station_get_config(&config);
+	bzero(config.ssid, 32);
+	bzero(config.password, 64);
+	memcpy(config.ssid,ssid, strlen(ssid));
+	memcpy(config.password, pass, strlen(pass));
+	printf("ssid=%s,password=%s\n", config.ssid, config.password);
+	wifi_station_set_config(&config);
+	wifi_set_opmode(STATION_MODE);
+	wifi_station_connect();
+}
+
+
+const portTickType xDelay = 2000 / portTICK_RATE_MS;
+
+void ICACHE_FLASH_ATTR
+yunba_mqtt_client_task(void *pvParameters)
+{
+    MQTTClient client;
+    Network network;
+    unsigned char sendbuf[80], readbuf[80];
+    int rc = 0,
+            count = 0;
+    MQTTPacket_connectData connectData = MQTTPacket_connectData_initializer;
+    vTaskDelay( xDelay );
+    pvParameters = 0;
+    NetworkInit(&network);
+    MQTTClientInit(&client, &network, 30000, sendbuf, sizeof(sendbuf), readbuf, sizeof(readbuf));
+
+    char* address = "iot.eclipse.org";
+    if ((rc = NetworkConnect(&network, address, 1883)) != 0)
+            printf("Return code from network connect is %d\n", rc);
+
+#if defined(MQTT_TASK)
+    printf("======> run task");
+    if ((rc = MQTTStartTask(&client)) != pdPASS)
+            printf("Return code from start tasks is %d\n", rc);
+#endif
+
+    connectData.MQTTVersion = 3;
+    connectData.clientID.cstring = "FreeRTOS_sample";
+
+    if ((rc = MQTTConnect(&client, &connectData)) != 0)
+            printf("Return code from MQTT connect is %d\n", rc);
+    else
+            printf("MQTT Connected\n");
+
+    if ((rc = MQTTSubscribe(&client, "FreeRTOS/sample/#", 2, messageArrived)) != 0)
+            printf("Return code from MQTT subscribe is %d\n", rc);
+
+#if 0
+    while (++count)
+    {
+            MQTTMessage message;
+            char payload[30];
+
+            message.qos = 1;
+            message.retained = 0;
+            message.payload = payload;
+            sprintf(payload, "message number %d", count);
+            message.payloadlen = strlen(payload);
+
+            if ((rc = MQTTPublish(&client, "FreeRTOS/sample/a", &message)) != 0)
+                    printf("Return code from MQTT publish is %d\n", rc);
+#if !defined(MQTT_TASK)
+            if ((rc = MQTTYield(&client, 1000)) != 0)
+                    printf("Return code from yield is %d\n", rc);
+#endif
+    }
+#endif
+
+    MQTTMessage message;
+    char payload[30];
+
+    message.qos = 1;
+    message.retained = 0;
+    message.payload = payload;
+    sprintf(payload, "message number %d", count);
+    message.payloadlen = strlen(payload);
+
+    if ((rc = MQTTPublish(&client, "FreeRTOS/sample/a", &message)) != 0)
+            printf("Return code from MQTT publish is %d\n", rc);
+
+    while (1)
+    {
+    	vTaskDelay( xDelay );
+#if !defined(MQTT_TASK)
+            if ((rc = MQTTYield(&client, 1000)) != 0)
+                    printf("Return code from yield is %d\n", rc);
+#endif
+    }
+
+
+
+	vTaskDelete(NULL);
 }
 
 
@@ -83,9 +193,8 @@ user_init(void)
 {
     printf("SDK version:%s\n", system_get_sdk_version());
 
-    /* need to set opmode before you set config */
-    wifi_set_opmode(STATION_MODE);
+    setup_wifi();
 
-    xTaskCreate(smartconfig_task, "smartconfig_task", 256, NULL, 2, NULL);
+    xTaskCreate(yunba_mqtt_client_task, "smartconfig_task", 256, NULL, 2, NULL);
 }
 

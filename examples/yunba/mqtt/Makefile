@@ -14,7 +14,7 @@
 ifndef PDIR
 UP_EXTRACT_DIR = ..
 GEN_LIBS = libmqtt.a
-COMPONENTS_libsample = MQTTClient/MQTTClient.a	\
+#COMPONENTS_libsample = MQTTClient/MQTTClient.a	\
                        MQTTPacket/MQTTPacket.a
 endif
 

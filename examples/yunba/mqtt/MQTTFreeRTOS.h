@@ -23,22 +23,46 @@
 
 //#include "FreeRTOS_Sockets.h"
 //#include "FreeRTOS_IP.h"
-#include "semphr.h"
-#include "task.h"
+#include "freertos/semphr.h"
+#include "freertos/task.h"
+#include "freertos/timers.h"
+
+#include "lwip/sockets.h"
+#include "lwip/netdb.h"
+
+#define FreeRTOS_setsockopt(a, b, c, d, e)   setsockopt(a, b, c, d, e)
+#define FreeRTOS_recv(a, b, c, d) recv(a, b, c, d)
+#define FreeRTOS_send(a, b, c, d) send(a, b, c, d)
+#define FreeRTOS_closesocket(a) closesocket(a)
+#define FreeRTOS_gethostbyname(a) lwip_gethostbyname(a)
+#define FreeRTOS_htons(a) htons(a)
+#define FreeRTOS_socket(a, b, c) socket(a, b, c)
+#define FreeRTOS_connect(a, b, c) connect(a, b, c)
+
+#define freertos_sockaddr sockaddr
+
+
+#define FREERTOS_SO_RCVTIMEO SO_RCVTIMEO
+
+#define FREERTOS_AF_INET AF_INET
+#define FREERTOS_SOCK_STREAM SOCK_STREAM
+#define FREERTOS_IPPROTO_TCP IPPROTO_TCP
+
 
 typedef struct Timer 
 {
 //	TickType_t xTicksToWait;
 	portTickType xTicksToWait;
 //	TimeOut_t xTimeOut;
-	xTimer xTimeOut;
+	xTimeOutType xTimeOut;
 } Timer;
 
 typedef struct Network Network;
 
 struct Network
 {
-	xSocket_t my_socket;
+//	xSocket_t my_socket;
+	int my_socket;
 	int (*mqttread) (Network*, unsigned char*, int, int);
 	int (*mqttwrite) (Network*, unsigned char*, int, int);
 	void (*disconnect) (Network*);
@@ -63,7 +87,7 @@ int MutexUnlock(Mutex*);
 
 typedef struct Thread
 {
-	TaskHandle_t task;
+	xTaskHandle task;
 } Thread;
 
 int ThreadStart(Thread*, void (*fn)(void*), void* arg);
