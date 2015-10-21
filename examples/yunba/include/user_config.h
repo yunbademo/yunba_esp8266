@@ -2,6 +2,7 @@
 #define __USER_CONFIG_H__
 
 
-#include "mqtt/MQTTClient.h"
+#define RESTORE_KEEP_TIMER 0
+
 #endif
 

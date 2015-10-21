@@ -63,22 +63,21 @@ struct Network
 {
 //	xSocket_t my_socket;
 	int my_socket;
-	int (*mqttread) (Network*, unsigned char*, int, int);
-	int (*mqttwrite) (Network*, unsigned char*, int, int);
+	int (*mqttread) (Network*, unsigned char*, int, uint32_t);
+	int (*mqttwrite) (Network*, unsigned char*, int, uint32_t);
 	void (*disconnect) (Network*);
 };
 
 void TimerInit(Timer*);
-char TimerIsExpired(Timer*);
-void TimerCountdownMS(Timer*, unsigned int);
-void TimerCountdown(Timer*, unsigned int);
-int TimerLeftMS(Timer*);
+portBASE_TYPE TimerIsExpired(Timer*);
+void TimerCountdownMS(Timer*, uint32_t);
+void TimerCountdown(Timer*, uint32_t);
+uint32_t TimerLeftMS(Timer*);
 
 typedef struct Mutex
 {
 //	SemaphoreHandle_t sem;
 	xSemaphoreHandle sem;
-
 } Mutex;
 
 void MutexInit(Mutex*);
@@ -92,12 +91,13 @@ typedef struct Thread
 
 int ThreadStart(Thread*, void (*fn)(void*), void* arg);
 
-int FreeRTOS_read(Network*, unsigned char*, int, int);
-int FreeRTOS_write(Network*, unsigned char*, int, int);
+int FreeRTOS_read(Network*, unsigned char*, int, uint32_t);
+int FreeRTOS_write(Network*, unsigned char*, int, uint32_t);
 void FreeRTOS_disconnect(Network*);
 
 void NetworkInit(Network*);
 int NetworkConnect(Network*, char*, int);
 /*int NetworkConnectTLS(Network*, char*, int, SlSockSecureFiles_t*, unsigned char, unsigned int, char);*/
+uint64_t generate_uuid();
 
 #endif

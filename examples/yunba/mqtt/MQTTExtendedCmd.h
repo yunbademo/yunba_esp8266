@@ -15,24 +15,21 @@
  *    Xiang Rong - 442039 Add makefile to Embedded C client
  *******************************************************************************/
 
-#ifndef MQTTUNSUBSCRIBE_H_
-#define MQTTUNSUBSCRIBE_H_
+#ifndef MQTTEXTENDEDCMD_H_
+#define MQTTEXTENDEDCMD_H_
 
 #if !defined(DLLImport)
-  #define DLLImport 
+  #define DLLImport
 #endif
 #if !defined(DLLExport)
   #define DLLExport
 #endif
 
-DLLExport int MQTTSerialize_unsubscribe(unsigned char* buf, int buflen, unsigned char dup, uint64_t packetid,
-		int count, MQTTString topicFilters[]);
+DLLExport int MQTTSerialize_extendedcmd(unsigned char* buf, int buflen, unsigned char dup, int qos, unsigned char retained, uint64_t packetid,
+		EXTED_CMD cmd, void *payload, int payloadlen);
 
-DLLExport int MQTTDeserialize_unsubscribe(unsigned char* dup, uint64_t* packetid, int max_count, int* count, MQTTString topicFilters[],
-		unsigned char* buf, int len);
+DLLExport int MQTTDeserialize_extendedcmd(unsigned char* dup, int* qos, unsigned char* retained, uint64_t* packetid,
+		EXTED_CMD* cmd, int *status,
+		void** payload, int* payloadlen, unsigned char* buf, int buflen);
 
-DLLExport int MQTTSerialize_unsuback(unsigned char* buf, int buflen, uint64_t packetid);
-
-DLLExport int MQTTDeserialize_unsuback(uint64_t* packetid, unsigned char* buf, int len);
-
-#endif /* MQTTUNSUBSCRIBE_H_ */
+#endif /* MQTTEXTENDEDCMD_H_ */

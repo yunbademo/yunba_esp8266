@@ -28,7 +28,7 @@
 int MQTTSerialize_subscribeLength(int count, MQTTString topicFilters[])
 {
 	int i;
-	int len = 2; /* packetid */
+	int len = 8; /* packetid */
 
 	for (i = 0; i < count; ++i)
 		len += 2 + MQTTstrlen(topicFilters[i]) + 1; /* length + topic + req_qos */
@@ -47,7 +47,7 @@ int MQTTSerialize_subscribeLength(int count, MQTTString topicFilters[])
   * @param requestedQoSs - array of requested QoS
   * @return the length of the serialized data.  <= 0 indicates error
   */
-int MQTTSerialize_subscribe(unsigned char* buf, int buflen, unsigned char dup, unsigned short packetid, int count,
+int MQTTSerialize_subscribe(unsigned char* buf, int buflen, unsigned char dup, uint64_t packetid, int count,
 		MQTTString topicFilters[], int requestedQoSs[])
 {
 	unsigned char *ptr = buf;
@@ -71,7 +71,7 @@ int MQTTSerialize_subscribe(unsigned char* buf, int buflen, unsigned char dup, u
 
 	ptr += MQTTPacket_encode(ptr, rem_len); /* write remaining length */;
 
-	writeInt(&ptr, packetid);
+	writeInt64(&ptr, packetid);
 
 	for (i = 0; i < count; ++i)
 	{
@@ -97,7 +97,7 @@ exit:
   * @param buflen the length in bytes of the data in the supplied buffer
   * @return error code.  1 is success, 0 is failure
   */
-int MQTTDeserialize_suback(unsigned short* packetid, int maxcount, int* count, int grantedQoSs[], unsigned char* buf, int buflen)
+int MQTTDeserialize_suback(uint64_t* packetid, int maxcount, int* count, int grantedQoSs[], unsigned char* buf, int buflen)
 {
 	MQTTHeader header = {0};
 	unsigned char* curdata = buf;
@@ -115,7 +115,7 @@ int MQTTDeserialize_suback(unsigned short* packetid, int maxcount, int* count, i
 	if (enddata - curdata < 2)
 		goto exit;
 
-	*packetid = readInt(&curdata);
+	*packetid = readInt64(&curdata);
 
 	*count = 0;
 	while (curdata < enddata)

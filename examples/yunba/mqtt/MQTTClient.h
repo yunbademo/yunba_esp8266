@@ -50,7 +50,7 @@
 #define MAX_PACKET_ID 65535 /* according to the MQTT specification - do not change! */
 
 #if !defined(MAX_MESSAGE_HANDLERS)
-#define MAX_MESSAGE_HANDLERS 5 /* redefinable - how many subscriptions do you want? */
+#define MAX_MESSAGE_HANDLERS 1 /* redefinable - how many subscriptions do you want? */
 #endif
 
 enum QoS { QOS0, QOS1, QOS2 };
@@ -70,17 +70,17 @@ typedef struct Network
 /* The Timer structure must be defined in the platform specific header,
  * and have the following functions to operate on it.  */
 extern void TimerInit(Timer*);
-extern char TimerIsExpired(Timer*);
-extern void TimerCountdownMS(Timer*, unsigned int);
-extern void TimerCountdown(Timer*, unsigned int);
-extern int TimerLeftMS(Timer*);
+extern portBASE_TYPE TimerIsExpired(Timer*);
+extern void TimerCountdownMS(Timer*, uint32_t);
+extern void TimerCountdown(Timer*, uint32_t);
+extern uint32_t TimerLeftMS(Timer*);
 
 typedef struct MQTTMessage
 {
     enum QoS qos;
     unsigned char retained;
     unsigned char dup;
-    unsigned short id;
+    uint64_t id;
     void *payload;
     size_t payloadlen;
 } MQTTMessage;
@@ -92,10 +92,11 @@ typedef struct MessageData
 } MessageData;
 
 typedef void (*messageHandler)(MessageData*);
+typedef void (*extendedmessageHandler)(EXTED_CMD cmd, int status, int ret_string_len, char *ret_string);
 
 typedef struct MQTTClient
 {
-    unsigned int next_packetid,
+    uint64_t next_packetid,
       command_timeout_ms;
     size_t buf_size,
       readbuf_size;
@@ -111,6 +112,12 @@ typedef struct MQTTClient
         void (*fp) (MessageData*);
     } messageHandlers[MAX_MESSAGE_HANDLERS];      /* Message handlers are indexed by subscription topic */
 
+    struct ExtMessageHandlers
+    {
+    	EXTED_CMD cmd;
+    	void (*cb) (EXTED_CMD cmd, int status, int ret_string_len, char *ret_string);
+    }  extmessageHandlers[MAX_MESSAGE_HANDLERS];
+
     void (*defaultMessageHandler) (MessageData*);
 
     Network* ipstack;
@@ -121,8 +128,22 @@ typedef struct MQTTClient
 #endif 
 } MQTTClient;
 
-#define DefaultClient {0, 0, 0, 0, NULL, NULL, 0, 0, 0}
+typedef struct {
+        /* in MQTT v3.1,If the Client ID contains more than 23 characters, the server responds to
+         * the CONNECT message with a CONNACK return code 2: Identifier Rejected.
+         * */
+        char *client_id;
+        /* in MQTT v3.1, it is recommended that passwords are kept to 12 characters or fewer, but
+         * it is not required. */
+        char *username;
+        /*in MQTT v3.1, It is recommended that passwords are kept to 12 characters or fewer, but
+         * it is not required. */
+        char *password;
+        /* user define it, and change size of device id. */
+        char *device_id;
+} REG_info;
 
+#define DefaultClient {0, 0, 0, 0, NULL, NULL, 0, 0, 0}
 
 /**
  * Create an MQTT client object
@@ -184,6 +205,16 @@ DLLExport int MQTTYield(MQTTClient* client, int time);
 */
 DLLExport int MQTTStartTask(MQTTClient* client);
 #endif
+
+DLLExport int MQTTClient_get_host_v2(char *appkey, char* url);
+DLLExport int MQTTClient_setup_with_appkey_v2(char* appkey, char *deviceid, REG_info *info);
+
+DLLExport int MQTTSetAlias(MQTTClient* c, const char* alias);
+DLLExport int MQTTPublishToAlias(MQTTClient* c, const char* alias, void *payload, int payloadlen);
+
+DLLExport int MQTTGetAlias(MQTTClient* c, const char *param);
+
+DLLExport int MQTTSetCallBack(MQTTClient *c, messageHandler cb, extendedmessageHandler ext_cb);
 
 #if defined(__cplusplus)
      }

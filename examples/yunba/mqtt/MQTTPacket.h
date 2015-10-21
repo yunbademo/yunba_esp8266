@@ -33,6 +33,8 @@ extern "C" {
   #define DLLExport  
 #endif
 
+#include "c_types.h"
+
 enum errors
 {
 	MQTTPACKET_BUFFER_TOO_SHORT = -2,
@@ -44,7 +46,38 @@ enum msgTypes
 {
 	CONNECT = 1, CONNACK, PUBLISH, PUBACK, PUBREC, PUBREL,
 	PUBCOMP, SUBSCRIBE, SUBACK, UNSUBSCRIBE, UNSUBACK,
-	PINGREQ, PINGRESP, DISCONNECT
+	PINGREQ, PINGRESP, DISCONNECT, EXTCMD
+};
+
+typedef enum {
+	GET_ALIAS =1,
+	GET_ALIAS_ACK,
+	GET_TOPIC,
+	GET_TOPIC_ACK,
+	GET_ALIAS_LIST,
+	GET_ALIAS_LIST_ACK,
+	PUBLISH2,
+	PUBLISH2_ACK,
+	GET_STATUS = 9,
+	GET_STATUS_ACK,
+	GET_TOPIC_LIST2 = 13,
+	GET_TOPIC_LIST2_ACK,
+	GET_ALIASLIST2,
+	GET_ALIASLIST2_ACK,
+	GET_STATUS2 = 19,
+	GET_STATUS2_ACK = 20
+} EXTED_CMD;
+
+enum {
+	PUBLISH2_TLV_TOPIC,
+	PUBLISH2_TLV_PAYLOAD,
+	PUBLISH2_TLV_PLAT,
+	PUBLISH2_TLV_TTL,
+	PUBLISH2_TLV_TIME_DELAY,
+	PUBLISH2_TLV_LOCATION,
+	PUBLISH2_TLV_QOS,
+	PUBLISH2_TLV_APN_JSON,
+	PUBLISH2_TLV_MAX_NUM
 };
 
 /**
@@ -90,12 +123,13 @@ int MQTTstrlen(MQTTString mqttstring);
 
 #include "MQTTConnect.h"
 #include "MQTTPublish.h"
+#include "MQTTExtendedCmd.h"
 #include "MQTTSubscribe.h"
 #include "MQTTUnsubscribe.h"
 #include "MQTTFormat.h"
 
-int MQTTSerialize_ack(unsigned char* buf, int buflen, unsigned char type, unsigned char dup, unsigned short packetid);
-int MQTTDeserialize_ack(unsigned char* packettype, unsigned char* dup, unsigned short* packetid, unsigned char* buf, int buflen);
+int MQTTSerialize_ack(unsigned char* buf, int buflen, unsigned char type, unsigned char dup, uint64_t packetid);
+int MQTTDeserialize_ack(unsigned char* packettype, unsigned char* dup, uint64_t* packetid, unsigned char* buf, int buflen);
 
 int MQTTPacket_len(int rem_len);
 int MQTTPacket_equals(MQTTString* a, char* b);
@@ -105,8 +139,10 @@ int MQTTPacket_decode(int (*getcharfn)(unsigned char*, int), int* value);
 int MQTTPacket_decodeBuf(unsigned char* buf, int* value);
 
 int readInt(unsigned char** pptr);
+uint64_t readInt64(uint8_t** pptr);
 char readChar(unsigned char** pptr);
 void writeChar(unsigned char** pptr, char c);
+void writeInt64(unsigned char** pptr, uint64_t anInt);
 void writeInt(unsigned char** pptr, int anInt);
 int readMQTTLenString(MQTTString* mqttstring, unsigned char** pptr, unsigned char* enddata);
 void writeCString(unsigned char** pptr, const char* string);

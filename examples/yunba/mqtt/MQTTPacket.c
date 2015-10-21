@@ -130,6 +130,17 @@ int readInt(unsigned char** pptr)
 	return len;
 }
 
+uint64_t readInt64(unsigned char** pptr)
+{
+	uint8_t *ptr = (uint8_t *)*pptr;
+    uint64_t len = ((uint64_t)ptr[0])<<0x38 | ((uint64_t)ptr[1])<<0x30
+        | ((uint64_t)ptr[2])<<0x28 | ((uint64_t)ptr[3])<<0x20
+        | ((uint64_t)ptr[4])<<0x18 | ((uint64_t)ptr[5])<<0x10
+        | ((uint64_t)ptr[6])<<0x8 | ((uint64_t)ptr[7])<<0;
+    *pptr += 8;
+    return len;
+}
+
 
 /**
  * Reads one character from the input buffer.
@@ -154,6 +165,24 @@ void writeChar(unsigned char** pptr, char c)
 	**pptr = c;
 	(*pptr)++;
 }
+
+/**
+ * Writes an 32/64bit-integer as 4/8 bytes to an output buffer.
+ * @param pptr pointer to the output buffer - incremented by the number of bytes used & returned
+ * @param anInt the integer to write
+ */
+void writeInt32(unsigned char** pptr, uint32_t anInt)
+{
+    writeInt(pptr, (anInt >> 16));
+    writeInt(pptr, (anInt & 0xffff));
+}
+
+void writeInt64(unsigned char** pptr, uint64_t anInt)
+{
+    writeInt32(pptr, (anInt >> 32));
+    writeInt32(pptr, (anInt & 0xffffffff));
+}
+
 
 
 /**

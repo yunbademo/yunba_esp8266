@@ -66,6 +66,9 @@ LINKFLAGS_eagle.app.v6 = \
 	-lnet80211	\
 	-lwpa	\
 	-lmain	\
+	-ljson	\
+	-lsmartconfig	\
+	-lpwm	\
 	-lfreertos	\
 	-llwip	\
 	$(DEP_LIBS_eagle.app.v6)					\
@@ -89,7 +92,8 @@ DEPENDS_eagle.app.v6 = \
 #	-DTXRX_TXBUF_DEBUG
 #	-DTXRX_RXBUF_DEBUG
 #	-DWLAN_CONFIG_CCX
-CONFIGURATION_DEFINES =	-DICACHE_FLASH -DMQTT_TASK
+CONFIGURATION_DEFINES =	-DICACHE_FLASH -DMQTT_TASK -DLIGHT_DEVICE
+#CONFIGURATION_DEFINES =	-DICACHE_FLASH
 
 DEFINES +=				\
 	$(UNIVERSAL_TARGET_DEFINES)	\
