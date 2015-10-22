@@ -188,7 +188,7 @@ int ICACHE_FLASH_ATTR NetworkConnect(Network* n, char* addr, int port)
 
 	bzero(&sAddr, sizeof(struct sockaddr_in));
 	if (!getIpForHost(addr, &sAddr)) {
-		printf("get host name fail\n");
+		printf("get ip by hostname fail\n");
 		return -1;
 	}
 

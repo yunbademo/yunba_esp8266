@@ -15,6 +15,7 @@
  *******************************************************************************/
 #include "MQTTClient.h"
 #include "json/cJSON.h"
+#include "util.h"
 
 #define HTTP_TIMEOUT 3000
 #define MEM_LEN 256
@@ -323,7 +324,7 @@ cycle(MQTTClient* c, Timer* timer)
                (unsigned char**)&msg.payload, (int*)&msg.payloadlen, c->readbuf, c->readbuf_size) != 1)
                 goto exit;
             msg.qos = (enum QoS)intQoS;
-            deliverMessage(c, &topicName, &msg);
+
             if (msg.qos != QOS0)
             {
                 if (msg.qos == QOS1)
@@ -339,8 +340,7 @@ cycle(MQTTClient* c, Timer* timer)
                     rc = sendPacket(c, len, timer);
                 }
                 printf("send pack rc: %d\n", rc);
-                if (rc == FAILURE)
-                    goto exit; // there was a problem
+                deliverMessage(c, &topicName, &msg);
             }
             break;
         }
@@ -386,7 +386,7 @@ cycle(MQTTClient* c, Timer* timer)
         }
         break;
     }
-
+    os_printf("begin to check keepalive\n");
     keepalive(c);
 exit:
     if (rc == SUCCESS)
@@ -434,8 +434,8 @@ void ICACHE_FLASH_ATTR MQTTRun(void* parm)
 #if defined(MQTT_TASK)
 		MutexUnlock(&c->mutex);
 #endif
-		 vTaskDelay( 500 / portTICK_RATE_MS );
-		 printf("MQTTRun %d word left\n",uxTaskGetStackHighWaterMark(NULL));
+		 vTaskDelay( 200 / portTICK_RATE_MS );
+//		 printf("MQTTRun %d word left\n",uxTaskGetStackHighWaterMark(NULL));
 	} 
 }
 
@@ -456,7 +456,6 @@ int waitfor(MQTTClient* c, int packet_type, Timer* timer)
     {
         if (TimerIsExpired(timer))
             break; // we timed out
-        os_printf("waiting for, %d\n", packet_type);
     }
     while ((rc = cycle(c, timer)) != packet_type);  
     os_printf("waiting for end, %d, rc:%d \n", packet_type, rc);
@@ -489,7 +488,7 @@ int MQTTConnect(MQTTClient* c, MQTTPacket_connectData* options)
         goto exit;
     if ((rc = sendPacket(c, len, &connect_timer)) != SUCCESS)  // send the connect packet
         goto exit; // there was a problem
-#if 0
+#if 1
     // this will be a blocking call, wait for the connack
     if (waitfor(c, CONNACK, &connect_timer) == CONNACK)
     {
@@ -508,7 +507,7 @@ exit:
         c->isconnected = 1;
 #endif
 
-exit:
+//exit:
 
 #if defined(MQTT_TASK)
 	MutexUnlock(&c->mutex);
@@ -729,14 +728,19 @@ int MQTTClient_get_host_v2(char *appkey, char* url)
 		if (ret == len) {
 			memset(buf, 0, MEM_LEN);
 			ret = n.mqttread(&n, buf, MEM_LEN, HTTP_TIMEOUT);
-			cJSON *root = cJSON_Parse(buf);
-			if (root) {
-				int ret_size = cJSON_GetArraySize(root);
-				if (ret_size >= 1) {
-					strcpy(url, cJSON_GetObjectItem(root,"c")->valuestring);
-					rc = SUCCESS;
+			if (ret > 3) {
+				uint16_t len = (uint16_t)(((uint8_t)buf[1] << 8) | (uint8_t)buf[2]);
+				if (ret == (len + 3)) {
+					cJSON *root = cJSON_Parse(buf);
+					if (root) {
+						int ret_size = cJSON_GetArraySize(root);
+						if (ret_size >= 1) {
+							strcpy(url, cJSON_GetObjectItem(root,"c")->valuestring);
+							rc = SUCCESS;
+						}
+						cJSON_Delete(root);
+					}
 				}
-				cJSON_Delete(root);
 			}
 		}
 		n.disconnect(&n);
@@ -777,17 +781,22 @@ int MQTTClient_setup_with_appkey_v2(char* appkey, char *deviceid, REG_info *info
 		if (ret == len) {
 			memset(buf, 0, MEM_LEN);
 			ret = n.mqttread(&n, buf, MEM_LEN, HTTP_TIMEOUT);
-			cJSON *root = cJSON_Parse(buf);
-			if (root) {
-				int ret_size = cJSON_GetArraySize(root);
-				if (ret_size >= 4) {
-					strcpy(info->client_id, cJSON_GetObjectItem(root,"c")->valuestring);
-					strcpy(info->username, cJSON_GetObjectItem(root,"u")->valuestring);
-					strcpy(info->password, cJSON_GetObjectItem(root,"p")->valuestring);
-					strcpy(info->device_id, cJSON_GetObjectItem(root,"d")->valuestring);
-					rc = SUCCESS;
+			if (ret > 3) {
+				uint16_t len = (uint16_t)(((uint8_t)buf[1] << 8) | (uint8_t)buf[2]);
+				if (ret == (len + 3)) {
+					cJSON *root = cJSON_Parse(buf);
+					if (root) {
+						int ret_size = cJSON_GetArraySize(root);
+						if (ret_size >= 4) {
+							strcpy(info->client_id, cJSON_GetObjectItem(root,"c")->valuestring);
+							strcpy(info->username, cJSON_GetObjectItem(root,"u")->valuestring);
+							strcpy(info->password, cJSON_GetObjectItem(root,"p")->valuestring);
+							strcpy(info->device_id, cJSON_GetObjectItem(root,"d")->valuestring);
+							rc = SUCCESS;
+						}
+						cJSON_Delete(root);
+					}
 				}
-				cJSON_Delete(root);
 			}
 		}
 		n.disconnect(&n);

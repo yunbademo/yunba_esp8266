@@ -23,6 +23,7 @@
 void ICACHE_FLASH_ATTR
 smartconfig_done(sc_status status, void *pdata)
 {
+    printf("smartconfig_done:%d\n", status);
     switch(status) {
         case SC_STATUS_WAIT:
             printf("SC_STATUS_WAIT\n");
@@ -64,6 +65,7 @@ smartconfig_done(sc_status status, void *pdata)
 void ICACHE_FLASH_ATTR
 smartconfig_task(void *pvParameters)
 {
+    printf("-------------->\n");
     smartconfig_start(smartconfig_done);
     
     vTaskDelete(NULL);
@@ -79,7 +81,7 @@ smartconfig_task(void *pvParameters)
 void ICACHE_FLASH_ATTR
 user_init(void)
 {
-    printf("SDK version:%s\n", system_get_sdk_version());
+    printf("xxxxxxxxxxxxxxxxSDK version:%s\n", system_get_sdk_version());
 
     /* need to set opmode before you set config */
     wifi_set_opmode(STATION_MODE);
