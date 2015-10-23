@@ -76,31 +76,31 @@ void  user_light_init(void)
 	memset(pwm_duty_init,0,PWM_CHANNEL*sizeof(uint32));
 	pwm_init(light_param.pwm_period, pwm_duty_init,PWM_CHANNEL,pwmio_info);
 
-
-    light_param.pwm_period = 1000;
-    light_param.pwm_duty[LIGHT_RED]= 22222;//APP_MAX_PWM;
-    light_param.pwm_duty[LIGHT_GREEN]= //22222;//APP_MAX_PWM;
-    light_param.pwm_duty[LIGHT_BLUE]= 0;//APP_MAX_PWM;
-    light_param.pwm_duty[LIGHT_COLD_WHITE]= 22222;//APP_MAX_PWM;
-    light_param.pwm_duty[LIGHT_WARM_WHITE]= 0;//APP_MAX_PWM;
-
-
-    printf("LIGHT P:%d",light_param.pwm_period);
-    printf(" R:%d",light_param.pwm_duty[LIGHT_RED]);
-    printf(" G:%d",light_param.pwm_duty[LIGHT_GREEN]);
-    printf(" B:%d",light_param.pwm_duty[LIGHT_BLUE]);
-    if(PWM_CHANNEL>LIGHT_COLD_WHITE){
-        printf(" CW:%d",light_param.pwm_duty[LIGHT_COLD_WHITE]);
-        printf(" WW:%d\r\n",light_param.pwm_duty[LIGHT_WARM_WHITE]);
-    }else{
-        printf("\r\n");
-    }
-
-    light_set_aim(light_param.pwm_duty[LIGHT_RED],
-                    light_param.pwm_duty[LIGHT_GREEN],
-                    light_param.pwm_duty[LIGHT_BLUE],
-                    light_param.pwm_duty[LIGHT_COLD_WHITE],
-                    light_param.pwm_duty[LIGHT_WARM_WHITE],
-                    light_param.pwm_period);
+//
+//    light_param.pwm_period = 1000;
+//    light_param.pwm_duty[LIGHT_RED]= 22222;//APP_MAX_PWM;
+//    light_param.pwm_duty[LIGHT_GREEN]= //22222;//APP_MAX_PWM;
+//    light_param.pwm_duty[LIGHT_BLUE]= 0;//APP_MAX_PWM;
+//    light_param.pwm_duty[LIGHT_COLD_WHITE]= 22222;//APP_MAX_PWM;
+//    light_param.pwm_duty[LIGHT_WARM_WHITE]= 0;//APP_MAX_PWM;
+//
+//
+//    printf("LIGHT P:%d",light_param.pwm_period);
+//    printf(" R:%d",light_param.pwm_duty[LIGHT_RED]);
+//    printf(" G:%d",light_param.pwm_duty[LIGHT_GREEN]);
+//    printf(" B:%d",light_param.pwm_duty[LIGHT_BLUE]);
+//    if(PWM_CHANNEL>LIGHT_COLD_WHITE){
+//        printf(" CW:%d",light_param.pwm_duty[LIGHT_COLD_WHITE]);
+//        printf(" WW:%d\r\n",light_param.pwm_duty[LIGHT_WARM_WHITE]);
+//    }else{
+//        printf("\r\n");
+//    }
+//
+//    light_set_aim(light_param.pwm_duty[LIGHT_RED],
+//                    light_param.pwm_duty[LIGHT_GREEN],
+//                    light_param.pwm_duty[LIGHT_BLUE],
+//                    light_param.pwm_duty[LIGHT_COLD_WHITE],
+//                    light_param.pwm_duty[LIGHT_WARM_WHITE],
+//                    light_param.pwm_period);
 
 }

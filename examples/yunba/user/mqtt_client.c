@@ -21,7 +21,8 @@
 
 #include "util.h"
 
-const char *DEV_ALIAS = "MN826W_34edb547_morlinks_mn826w";
+//const char *DEV_ALIAS = "MN826W_34edb547_morlinks_mn826w";
+const char *DEV_ALIAS = "MN826W_34edb547_wirelesstag";
 
 const portTickType xDelay = 1000 / portTICK_RATE_MS;
 
@@ -59,8 +60,8 @@ void messageArrived(MessageData* data)
 					uint16_t red = cJSON_GetObjectItem(root,"r")->valueint;
 					uint16_t green = cJSON_GetObjectItem(root,"g")->valueint;
 					uint16_t blue = cJSON_GetObjectItem(root,"b")->valueint;
-					light_set_aim(red, green, blue, 0, 0, period);
 					printf("light parm:%d,%d, %d, %d\n", period, red, green, blue);
+					light_set_aim(red, green, blue, 0, 0, period);
 				}
 				cJSON_Delete(root);
 			}
@@ -156,7 +157,10 @@ yunba_mqtt_client_task(void *pvParameters)
     char *addr = (char *)malloc(28);
     uint16_t port;
     memset(addr, 0, 28);
-    yunba_get_mqtt_broker("55fceaa34a481fa955f3955f", "ac871c09a69c3d2d9988c9152913fa03", addr, &port, &reg);
+//    yunba_get_mqtt_broker("55fceaa34a481fa955f3955f", "ac871c09a69c3d2d9988c9152913fa03", addr, &port, &reg);
+
+//    682ecfe2106beb4b2cd772f16bc42c68 for wireless tag
+    yunba_get_mqtt_broker("55fceaa34a481fa955f3955f", "682ecfe2106beb4b2cd772f16bc42c68", addr, &port, &reg);
 
     printf("get mqtt broker->%s:%d\n", addr, port);
     printf("get reg info: cid:%s, username:%d, password:%s, devid:%s\n",

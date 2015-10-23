@@ -728,10 +728,10 @@ int MQTTClient_get_host_v2(char *appkey, char* url)
 		if (ret == len) {
 			memset(buf, 0, MEM_LEN);
 			ret = n.mqttread(&n, buf, MEM_LEN, HTTP_TIMEOUT);
-			if (ret > 3) {
-				uint16_t len = (uint16_t)(((uint8_t)buf[1] << 8) | (uint8_t)buf[2]);
-				if (ret == (len + 3)) {
-					cJSON *root = cJSON_Parse(buf);
+//			if (ret > 3) {
+				len = (uint16_t)(((uint8_t)buf[1] << 8) | (uint8_t)buf[2]);
+				if (len == strlen(buf + 3)) {
+					cJSON *root = cJSON_Parse(buf + 3);
 					if (root) {
 						int ret_size = cJSON_GetArraySize(root);
 						if (ret_size >= 1) {
@@ -741,7 +741,7 @@ int MQTTClient_get_host_v2(char *appkey, char* url)
 						cJSON_Delete(root);
 					}
 				}
-			}
+	//		}
 		}
 		n.disconnect(&n);
 		free(buf);
@@ -781,10 +781,10 @@ int MQTTClient_setup_with_appkey_v2(char* appkey, char *deviceid, REG_info *info
 		if (ret == len) {
 			memset(buf, 0, MEM_LEN);
 			ret = n.mqttread(&n, buf, MEM_LEN, HTTP_TIMEOUT);
-			if (ret > 3) {
-				uint16_t len = (uint16_t)(((uint8_t)buf[1] << 8) | (uint8_t)buf[2]);
-				if (ret == (len + 3)) {
-					cJSON *root = cJSON_Parse(buf);
+	//		if (ret > 3) {
+				len = (uint16_t)(((uint8_t)buf[1] << 8) | (uint8_t)buf[2]);
+				if (len == strlen(buf + 3)) {
+					cJSON *root = cJSON_Parse(buf + 3);
 					if (root) {
 						int ret_size = cJSON_GetArraySize(root);
 						if (ret_size >= 4) {
@@ -797,7 +797,7 @@ int MQTTClient_setup_with_appkey_v2(char* appkey, char *deviceid, REG_info *info
 						cJSON_Delete(root);
 					}
 				}
-			}
+		//	}
 		}
 		n.disconnect(&n);
 		free(json_data);
