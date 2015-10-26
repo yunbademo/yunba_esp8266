@@ -21,8 +21,8 @@
 
 #include "util.h"
 
-//const char *DEV_ALIAS = "MN826W_34edb547_morlinks_mn826w";
-const char *DEV_ALIAS = "MN826W_34edb547_wirelesstag";
+const char *DEV_ALIAS = "MN826W_34edb547_led1";
+//const char *DEV_ALIAS = "MN826W_34edb547_wirelesstag";
 
 const portTickType xDelay = 1000 / portTICK_RATE_MS;
 
@@ -160,7 +160,12 @@ yunba_mqtt_client_task(void *pvParameters)
 //    yunba_get_mqtt_broker("55fceaa34a481fa955f3955f", "ac871c09a69c3d2d9988c9152913fa03", addr, &port, &reg);
 
 //    682ecfe2106beb4b2cd772f16bc42c68 for wireless tag
-    yunba_get_mqtt_broker("55fceaa34a481fa955f3955f", "682ecfe2106beb4b2cd772f16bc42c68", addr, &port, &reg);
+
+    //LED1
+//    yunba_get_mqtt_broker("55fceaa34a481fa955f3955f", "001f40e05c7ec805795c1f09001fc9c0", addr, &port, &reg);
+
+
+    yunba_get_mqtt_broker("55fceaa34a481fa955f3955f", "001f40e05c7ec805795c1f09001fc9c0", addr, &port, &reg);
 
     printf("get mqtt broker->%s:%d\n", addr, port);
     printf("get reg info: cid:%s, username:%d, password:%s, devid:%s\n",

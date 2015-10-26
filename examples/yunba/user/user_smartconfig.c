@@ -38,6 +38,7 @@ smartconfig_done(sc_status status, void *pdata)
 	        wifi_station_set_config(sta_conf);
 	        wifi_station_disconnect();
 	        wifi_station_connect();
+	        //change led. green
             break;
         case SC_STATUS_LINK_OVER:
             printf("SC_STATUS_LINK_OVER\n");
@@ -47,6 +48,7 @@ smartconfig_done(sc_status status, void *pdata)
                 memcpy(phone_ip, (uint8*)pdata, 4);
                 printf("Phone ip: %d.%d.%d.%d\n",phone_ip[0],phone_ip[1],phone_ip[2],phone_ip[3]);
             }
+            //change led blue
             smartconfig_stop();
             xTaskCreate(yunba_mqtt_client_task,
             		"yunba_mqtt_client_task",
@@ -74,6 +76,7 @@ smartconfig_task(void *pvParameters)
 
 
 void smartconfig() {
+	//get_station_config
  //   struct station_config *sta_config5 = (struct station_config *)zalloc(sizeof(struct station_config)*5);
 //    int ret = wifi_station_get_ap_info(sta_config5);
  //   free(sta_config5);

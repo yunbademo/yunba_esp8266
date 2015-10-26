@@ -299,38 +299,23 @@ exit:
 #endif
 }
 
-float pow_l(float a,int b)
-{
- float r=a;
-if(b>0)
-{
- while(--b)
- r*=a;
-
-}
-else if(b<0)
- {
-      while(++b)     r*=a;
-         r=1.0/r;
-     }
-    else r=0;
- }
 
 
-unsigned long long int randm(int n) {
-        double x;
-        unsigned long long int y;
-  //      srand(xTaskGetTickCount());
-        x = rand() / (double)RAND_MAX;
-        y = (unsigned long long int) (x * (unsigned long long int)pow_l((float)10.0, (float)n*1.0));
-        return y;
-}
+//unsigned long long int randm(int n) {
+//#include <espressif/esp_libc.h>
+//        double x;
+//        unsigned long long int y;
+//        srand(xTaskGetTickCount());
+//        x = rand() / (double)RAND_MAX;
+//        y = (unsigned long long int) (x * (unsigned long long int)pow_l((float)10.0, (float)n*1.0));
+//        return y;
+//}
 
 uint64_t generate_uuid() {
-        uint64_t utc = system_get_rtc_time();
-        uint64_t id = utc << (64 - 41);
-        id |= (uint64_t)(randm(16) % (unsigned long long int)(pow_l(2, (64 - 41))));
-        return id;
+        uint64_t system_time = system_get_time();
+//        uint64_t id = utc << (64 - 41);
+//        id |= (uint64_t)(randm(16) % (unsigned long long int)(pow(2, (64 - 41))));
+        return system_time;
 }
 
 
