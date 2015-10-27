@@ -216,6 +216,8 @@ DLLExport int MQTTGetAlias(MQTTClient* c, const char *param);
 
 DLLExport int MQTTSetCallBack(MQTTClient *c, messageHandler cb, extendedmessageHandler ext_cb);
 
+DLLExport int MQTTClient_presence(MQTTClient* c, char* topic);
+
 #if defined(__cplusplus)
      }
 #endif

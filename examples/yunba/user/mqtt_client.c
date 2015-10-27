@@ -11,9 +11,6 @@
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
 
-//#include "lwip/sockets.h"
-//#include "lwip/dns.h"
-//#include "lwip/netdb.h"
 #include "smartconfig.h"
 
 #include "MQTTClient.h"
@@ -21,13 +18,14 @@
 
 #include "util.h"
 
-const char *DEV_ALIAS = "MN826W_34edb547_led2";
+const char *DEV_ALIAS = "MN826W_34edb547_led0";
 //const char *DEV_ALIAS = "MN826W_34edb547_wirelesstag";
 
 const portTickType xDelay = 1000 / portTICK_RATE_MS;
 
+
 typedef enum {
-	ST_INIT, ST_CONNECT, ST_REG, ST_SUB, ST_PUBLISH, ST_RUNNING, ST_DIS
+	ST_INIT, ST_CONNECT, ST_REG, ST_SUB, ST_PUBLISH, ST_RUNNING, ST_DIS, ST_RECONN
 } MQTT_STATE_t;
 
 MQTT_STATE_t MQTT_State = ST_INIT;
@@ -84,7 +82,6 @@ static void extMessageArrive(EXTED_CMD cmd, int status, int ret_string_len, char
 	}
 }
 
-
 static int get_ip_pair(const char *url, char *addr, uint16_t *port)
 {
 	char *p = strstr(url, "tcp://");
@@ -128,21 +125,16 @@ void yunba_get_mqtt_broker(char *appkey, char *deviceid, char *broker_addr, uint
     } while (1);
 }
 
+
 void ICACHE_FLASH_ATTR
 yunba_mqtt_client_task(void *pvParameters)
 {
     MQTTClient client;
     Network network;
-//    unsigned char sendbuf[200], readbuf[200];
     int rc = 0, count = 0;
-
     uint8_t *sendbuf = (uint8_t *)malloc(200);
     uint8_t *readbuf = (uint8_t *)malloc(200);
 
-    vTaskDelay(xDelay);
-//    printf("begin --------->mutex\n");
-//    rc = xSemaphoreTake(sem_yunba, portMAX_DELAY);
-//    printf("--------->mutex: %d\n", rc);
     MQTTPacket_connectData connectData = MQTTPacket_connectData_initializer;
 
     pvParameters = 0;
@@ -157,15 +149,14 @@ yunba_mqtt_client_task(void *pvParameters)
     char *addr = (char *)malloc(28);
     uint16_t port;
     memset(addr, 0, 28);
-//    yunba_get_mqtt_broker("55fceaa34a481fa955f3955f", "ac871c09a69c3d2d9988c9152913fa03", addr, &port, &reg);
+    yunba_get_mqtt_broker("55fceaa34a481fa955f3955f", "ac871c09a69c3d2d9988c9152913fa03", addr, &port, &reg);
 
 //    682ecfe2106beb4b2cd772f16bc42c68 for wireless tag
 
     //LED1
 //    yunba_get_mqtt_broker("55fceaa34a481fa955f3955f", "001f40e05c7ec805795c1f09001fc9c0", addr, &port, &reg);
-
 //LED2
-    yunba_get_mqtt_broker("55fceaa34a481fa955f3955f", "39780fc51b216beb0b7e47694b74ab3e", addr, &port, &reg);
+//    yunba_get_mqtt_broker("55fceaa34a481fa955f3955f", "39780fc51b216beb0b7e47694b74ab3e", addr, &port, &reg);
 
     printf("get mqtt broker->%s:%d\n", addr, port);
     printf("get reg info: cid:%s, username:%d, password:%s, devid:%s\n",
@@ -174,12 +165,10 @@ yunba_mqtt_client_task(void *pvParameters)
     MQTTSetCallBack(&client, messageArrived, extMessageArrive);
 
     for(;;) {
- //   	printf("yunba_mqtt_client_task %d word left\n",uxTaskGetStackHighWaterMark(NULL));
     	switch (MQTT_State) {
     	case ST_INIT:
     	{
 			if ((rc = NetworkConnect(&network, addr, port)) != 0)
-//    		if ((rc = NetworkConnect(&network, "123.56.225.70", 1883)) != 0)
 				os_printf("Return code from network connect is %d\n", rc);
     		else
     			printf("net connect: %d\n", rc);
@@ -194,9 +183,6 @@ yunba_mqtt_client_task(void *pvParameters)
 			connectData.username.cstring = reg.username;
 			connectData.password.cstring = reg.password;
 			connectData.keepAliveInterval = 30;
-//       	    connectData.clientID.cstring = "0000002557-000000000011";
-//       	    connectData.username.cstring = "2531052302704246144";
-//       	    connectData.password.cstring = "0d0bb10fd99e3";
 
 			if ((rc = MQTTConnect(&client, &connectData)) != 0) {
 				os_printf("Return code from MQTT connect is %d\n", rc);
@@ -208,10 +194,6 @@ yunba_mqtt_client_task(void *pvParameters)
 					os_printf("Return code from start tasks is %d\n", rc);
 			#endif
 				MQTT_State = ST_REG;
-				free(reg.client_id);
-				free(reg.device_id);
-				free(reg.username);
-				free(reg.password);
 			}
     	}
      		break;
@@ -239,7 +221,7 @@ yunba_mqtt_client_task(void *pvParameters)
 //        	os_printf("------>publish\n");
 //        	 if ((rc = MQTTPublish(&client, "MN826W_34edb547", &message)) != 0)
 //        	            printf("Return code from MQTT publish is %d\n", rc);
-
+    		MQTTClient_presence(&client, "MN826W_34edb547");
         	 MQTTSetAlias(&client, DEV_ALIAS);
 //        	 MQTTGetAlias(&client, "MN826W_34edb547");
 
@@ -261,7 +243,14 @@ yunba_mqtt_client_task(void *pvParameters)
 //          	            printf("Return code from MQTT publish is %d\n", rc);
  //         	os_printf("------>running, publish\n");
     	}
+    		break;
 
+		case ST_RECONN:
+		{
+			if (MQTTConnect(&client, &connectData) == 0) {
+				MQTT_State = ST_RUNNING;
+			}
+		}
     		break;
 
     	default:
@@ -277,10 +266,10 @@ yunba_mqtt_client_task(void *pvParameters)
 #endif
     }
 
-//    free(reg.client_id);
-//    free(reg.device_id);
-//    free(reg.password);
-//    free(reg.username);
+    free(reg.client_id);
+    free(reg.device_id);
+    free(reg.password);
+    free(reg.username);
     free(sendbuf);
     free(readbuf);
 

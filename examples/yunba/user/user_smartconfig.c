@@ -11,6 +11,10 @@
 #include "util.h"
 #include "mqtt_client.h"
 
+#include "user_light.h"
+
+LOCAL os_timer_t client_timer;
+
 void ICACHE_FLASH_ATTR
 smartconfig_done(sc_status status, void *pdata)
 {
@@ -38,7 +42,6 @@ smartconfig_done(sc_status status, void *pdata)
 	        wifi_station_set_config(sta_conf);
 	        wifi_station_disconnect();
 	        wifi_station_connect();
-	        //change led. green
             break;
         case SC_STATUS_LINK_OVER:
             printf("SC_STATUS_LINK_OVER\n");
@@ -47,76 +50,64 @@ smartconfig_done(sc_status status, void *pdata)
 
                 memcpy(phone_ip, (uint8*)pdata, 4);
                 printf("Phone ip: %d.%d.%d.%d\n",phone_ip[0],phone_ip[1],phone_ip[2],phone_ip[3]);
+
             }
-            //change led blue
             smartconfig_stop();
+            light_set_aim(APP_MAX_PWM, APP_MAX_PWM, APP_MAX_PWM, 0, APP_MAX_PWM, 1000);
             xTaskCreate(yunba_mqtt_client_task,
             		"yunba_mqtt_client_task",
             		384,//configMINIMAL_STACK_SIZE * 7,
             		NULL,
             		2,
             		NULL);
-        //    xSemaphoreGive(sem_yunba);
             break;
     }
 }
 
-
-
-void
-smartconfig_task(void *pvParameters)
+void smartconfig_task(void *pvParameters)
 {
+	light_set_aim(APP_MAX_PWM, 0, 0, 0, APP_MAX_PWM, 1000);
     printf("smartconfig_task start\n");
     smartconfig_start(smartconfig_done);
 
     vTaskDelete(NULL);
-
-    printf("------------------->\n");
 }
 
+LOCAL void check_wifi_conn(void *parm)
+{
+	uint8_t status = wifi_station_get_connect_status();
+	switch (status) {
+	case STATION_GOT_IP:
+		xTaskCreate(yunba_mqtt_client_task,
+				"yunba_mqtt_client_task",
+				384,//configMINIMAL_STACK_SIZE * 7,
+				NULL,
+				2,
+				NULL);
+        break;
 
-void smartconfig() {
-	//get_station_config
- //   struct station_config *sta_config5 = (struct station_config *)zalloc(sizeof(struct station_config)*5);
-//    int ret = wifi_station_get_ap_info(sta_config5);
- //   free(sta_config5);
-  //  printf("wifi_station_get_ap num %d\n",ret);
- //   if(0 == ret) {
-        /*should be true here, Zero just for debug usage*/
- //       if(1){
-            /*AP_num == 0, no ap cached,start smartcfg*/
-            wifi_set_opmode(STATION_MODE);
-            xTaskCreate(smartconfig_task, "smartconfig_task", 256, NULL, 10, NULL);
-
-//            while(device_status != 0) {
-//                printf("configing...\n");
-//                vTaskDelay(2000 / portTICK_RATE_MS);
-        //    }
- //       }
- //   }
+	case 255:
+		os_timer_arm(&client_timer, 5000, 0);
+		break;
+	default:
+		wifi_set_opmode(STATION_MODE);
+		 xTaskCreate(smartconfig_task, "smartconfig_task", 256, NULL, 10, NULL);
+		 break;
+	}
+	printf("wifi conn status:%d\n", status);
 }
 
 void setup_wifi(void)
 {
-#if 0
-	char *ssid = "yunba.io";
-	char *pass = "123456789";
-//	char *ssid = "OpenWrt";
-//	char *pass = "qwertyuiop";
-
-	struct station_config config;
-	wifi_station_get_config(&config);
-	bzero(config.ssid, 32);
-	bzero(config.password, 64);
-	memcpy(config.ssid,ssid, strlen(ssid));
-	memcpy(config.password, pass, strlen(pass));
-	printf("ssid=%s,password=%s\n", config.ssid, config.password);
-	wifi_station_set_config(&config);
-
-	wifi_set_opmode(STATION_MODE);
-	wifi_station_connect();
-#else
-	smartconfig();
-#endif
+    struct station_config *sta_config5 = (struct station_config *)zalloc(sizeof(struct station_config)*5);
+    int ret = wifi_station_get_config(sta_config5);
+    printf("get wifi config, %s, %s, %d\n", sta_config5->ssid, sta_config5->password, ret);
+    wifi_set_opmode(STATION_MODE);
+    if(strlen(sta_config5->ssid) != 0) {
+        os_timer_disarm(&client_timer);
+        os_timer_setfn(&client_timer, (os_timer_func_t *)check_wifi_conn, NULL);
+        os_timer_arm(&client_timer, 6000, 0);
+    } else
+    	xTaskCreate(smartconfig_task, "smartconfig_task", 256, NULL, 10, NULL);
+    free(sta_config5);
 }
-

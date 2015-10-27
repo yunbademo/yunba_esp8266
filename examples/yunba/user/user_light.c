@@ -78,11 +78,11 @@ void  user_light_init(void)
 
 
     light_param.pwm_period = 1000;
-    light_param.pwm_duty[LIGHT_RED]= 22222;//APP_MAX_PWM;
-    light_param.pwm_duty[LIGHT_GREEN]= 22222;//APP_MAX_PWM;
-    light_param.pwm_duty[LIGHT_BLUE]= 22222;//APP_MAX_PWM;
-    light_param.pwm_duty[LIGHT_COLD_WHITE]= 22222;//APP_MAX_PWM;
-    light_param.pwm_duty[LIGHT_WARM_WHITE]= 22222;//APP_MAX_PWM;
+    light_param.pwm_duty[LIGHT_RED]= APP_MAX_PWM;
+    light_param.pwm_duty[LIGHT_GREEN]= APP_MAX_PWM;
+    light_param.pwm_duty[LIGHT_BLUE]= APP_MAX_PWM;
+    light_param.pwm_duty[LIGHT_COLD_WHITE]= APP_MAX_PWM;
+    light_param.pwm_duty[LIGHT_WARM_WHITE]= APP_MAX_PWM;
 
 
 //    printf("LIGHT P:%d",light_param.pwm_period);
@@ -104,10 +104,10 @@ void  user_light_init(void)
                     light_param.pwm_period);
 
 
-    pwm_set_duty(22222, LIGHT_RED);
+    pwm_set_duty(APP_MAX_PWM, LIGHT_RED);
 
-    pwm_set_duty(22222, LIGHT_GREEN);
+    pwm_set_duty(APP_MAX_PWM, LIGHT_GREEN);
 
-    pwm_set_duty(22222, LIGHT_BLUE);
+    pwm_set_duty(APP_MAX_PWM, LIGHT_BLUE);
 
 }

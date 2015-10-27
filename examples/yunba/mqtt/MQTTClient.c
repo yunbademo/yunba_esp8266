@@ -20,6 +20,7 @@
 #define HTTP_TIMEOUT 3000
 #define MEM_LEN 256
 
+LOCAL os_timer_t monitor_wifi_timer;
 
 static int deliverextMessage(MQTTClient* c, EXTED_CMD cmd, int status, int ret_string_len, char *ret_string);
 
@@ -237,7 +238,7 @@ int keepalive(MQTTClient* c)
             	TimerCountdown(&c->ping_timer, 5);
             }
 
-            printf("keeplive: %d, %d\n", len, rc);
+         //   printf("keeplive: %d, %d\n", len, rc);
         }
     }
 
@@ -386,7 +387,6 @@ cycle(MQTTClient* c, Timer* timer)
         }
         break;
     }
-    os_printf("begin to check keepalive\n");
     keepalive(c);
 exit:
     if (rc == SUCCESS)
@@ -416,6 +416,27 @@ int MQTTYield(MQTTClient* c, int timeout_ms)
     return rc;
 }
 
+LOCAL void check_net_status(void *parm)
+{
+	MQTTClient *c = (MQTTClient *)parm;
+	static uint8_t pre_status = 255;
+	uint8_t status = wifi_station_get_connect_status();
+	if (pre_status != status) {
+		pre_status = status;
+		printf("wifi status change: %d\n", status);
+	}
+	//TODO:
+	printf("check_net_status, %d\n", status);
+	os_timer_arm(&monitor_wifi_timer, 60000, 0);
+}
+
+LOCAL void setup_monitor_net(MQTTClient *c)
+{
+    os_timer_disarm(&monitor_wifi_timer);
+    os_timer_setfn(&monitor_wifi_timer, (os_timer_func_t *)check_net_status, c);
+    os_timer_arm(&monitor_wifi_timer, 60000, 0);
+}
+
 
 void ICACHE_FLASH_ATTR MQTTRun(void* parm)
 {
@@ -424,6 +445,7 @@ void ICACHE_FLASH_ATTR MQTTRun(void* parm)
 	os_printf("MQTTRun\n");
 	TimerInit(&timer);
 
+	setup_monitor_net(c);
 	while (1)
 	{
 #if defined(MQTT_TASK)
@@ -912,5 +934,17 @@ int MQTTSetCallBack(MQTTClient *c, messageHandler cb, extendedmessageHandler ext
 int MQTTGetAlias(MQTTClient* c, const char *param)
 {
 	int rc = MQTTExtendedCmd(c, GET_ALIAS, (void *)param, strlen(param), DEFAULT_QOS, DEFAULT_RETAINED);
+	return rc;
+}
+
+int MQTTClient_presence(MQTTClient* c, char* topic)
+{
+	int rc = -1;
+	char *buf = (char *)malloc(100);
+	if (buf) {
+		sprintf(buf, "%s/p", topic);
+		rc = MQTTSubscribe(c, buf, QOS1, NULL);
+		free(buf);
+	}
 	return rc;
 }
