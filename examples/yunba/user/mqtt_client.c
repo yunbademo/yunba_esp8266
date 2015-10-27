@@ -18,8 +18,10 @@
 
 #include "util.h"
 
-const char *DEV_ALIAS = "MN826W_34edb547_led0";
+//const char *DEV_ALIAS = "MN826W_34edb547_led0";
 //const char *DEV_ALIAS = "MN826W_34edb547_wirelesstag";
+
+ USER_PARM_t parm;
 
 const portTickType xDelay = 1000 / portTICK_RATE_MS;
 
@@ -44,11 +46,11 @@ void messageArrived(MessageData* data)
 
 		memset(buf, 0, 256);
 		memcpy(buf, data->message->payload, data->message->payloadlen);
-		printf("message arrive,msg: %s\n", buf);
+		printf("message arrive:\nmsg: %s\n", buf);
 		memset(topic, 0, 100);
 		memcpy(topic, data->topicName->lenstring.data, data->topicName->lenstring.len);
-		printf("message arrive,topic: %s\n", topic);
-		if (strcmp(topic, DEV_ALIAS) == 0) {
+		printf("topic: %s\n", topic);
+		if (strcmp(topic, parm.alias) == 0) {
 			cJSON *root = cJSON_Parse(buf);
 			//{p:period, r:red, g:green, b:blue}
 			if (root) {
@@ -137,6 +139,9 @@ yunba_mqtt_client_task(void *pvParameters)
 
     MQTTPacket_connectData connectData = MQTTPacket_connectData_initializer;
 
+    if (init_user_parm(&parm) == 0)
+    	load_user_parm(&parm);
+
     pvParameters = 0;
     NetworkInit(&network);
     MQTTClientInit(&client, &network, 30000, sendbuf, 200 * sizeof(uint8_t), readbuf, 200 * sizeof(uint8_t));
@@ -149,14 +154,7 @@ yunba_mqtt_client_task(void *pvParameters)
     char *addr = (char *)malloc(28);
     uint16_t port;
     memset(addr, 0, 28);
-    yunba_get_mqtt_broker("55fceaa34a481fa955f3955f", "ac871c09a69c3d2d9988c9152913fa03", addr, &port, &reg);
-
-//    682ecfe2106beb4b2cd772f16bc42c68 for wireless tag
-
-    //LED1
-//    yunba_get_mqtt_broker("55fceaa34a481fa955f3955f", "001f40e05c7ec805795c1f09001fc9c0", addr, &port, &reg);
-//LED2
-//    yunba_get_mqtt_broker("55fceaa34a481fa955f3955f", "39780fc51b216beb0b7e47694b74ab3e", addr, &port, &reg);
+    yunba_get_mqtt_broker(parm.appkey, parm.deviceid, addr, &port, &reg);
 
     printf("get mqtt broker->%s:%d\n", addr, port);
     printf("get reg info: cid:%s, username:%d, password:%s, devid:%s\n",
@@ -178,11 +176,11 @@ yunba_mqtt_client_task(void *pvParameters)
 
     	case ST_CONNECT:
     	{
-       	    connectData.MQTTVersion = 19;//3;
+    		connectData.MQTTVersion = 19;
 			connectData.clientID.cstring = reg.client_id;
 			connectData.username.cstring = reg.username;
 			connectData.password.cstring = reg.password;
-			connectData.keepAliveInterval = 30;
+			connectData.keepAliveInterval = parm.aliveinterval;
 
 			if ((rc = MQTTConnect(&client, &connectData)) != 0) {
 				os_printf("Return code from MQTT connect is %d\n", rc);
@@ -199,7 +197,7 @@ yunba_mqtt_client_task(void *pvParameters)
      		break;
     	case ST_REG:
     	{
-    		if ((rc = MQTTSubscribe(&client, "MN826W_34edb547", QOS1, messageArrived)) != 0)
+    		if ((rc = MQTTSubscribe(&client, parm.topic, QOS1, messageArrived)) != 0)
     			os_printf("Return code from MQTT subscribe is %d\n", rc);
     		else
     			os_printf("subscribe: %d\n", rc);
@@ -208,26 +206,9 @@ yunba_mqtt_client_task(void *pvParameters)
     		break;
 
     	case ST_SUB:
-    	{
-//    	    MQTTMessage message;
-//    	    char payload[30];
-//
-//    	    message.qos = 1;
-//    	    message.retained = 0;
-//    	    message.payload = payload;
-//    	    sprintf(payload, "message number %d", count);
-//    	    message.payloadlen = strlen(payload);
-//
-//        	os_printf("------>publish\n");
-//        	 if ((rc = MQTTPublish(&client, "MN826W_34edb547", &message)) != 0)
-//        	            printf("Return code from MQTT publish is %d\n", rc);
-    		MQTTClient_presence(&client, "MN826W_34edb547");
-        	 MQTTSetAlias(&client, DEV_ALIAS);
-//        	 MQTTGetAlias(&client, "MN826W_34edb547");
-
-        	// rc = MQTTPublishToAlias(&client, "MN826W_34edb547_morlinks_mn826w", payload, message.payloadlen);
-        	 MQTT_State = ST_RUNNING;
-    	}
+    		MQTTClient_presence(&client, parm.topic);
+    		MQTTSetAlias(&client, parm.alias);
+        	MQTT_State = ST_RUNNING;
     		break;
     	case ST_RUNNING:
     	{
@@ -274,6 +255,7 @@ yunba_mqtt_client_task(void *pvParameters)
     free(readbuf);
 
     free(addr);
+    user_parm_free(&parm);
 
 	vTaskDelete(NULL);
 }
