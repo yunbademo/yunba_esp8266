@@ -29,6 +29,8 @@ user_init(void)
 {
 #if defined(LIGHT_DEVICE)
 	user_light_init();
+#elif defined(PLUG_DEVICE)
+	user_plug_init();
 #endif
 //	sem_yunba = xSemaphoreCreateMutex();
 //	xSemaphoreTake(sem_yunba, portMAX_DELAY);

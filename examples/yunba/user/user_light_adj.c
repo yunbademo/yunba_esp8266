@@ -2,7 +2,7 @@
 #include "esp_common.h"
 #include "user_config.h"
 
-#if LIGHT_DEVICE
+#if defined(LIGHT_DEVICE)
 
 #include "user_light.h"
 #include "user_light_adj.h"

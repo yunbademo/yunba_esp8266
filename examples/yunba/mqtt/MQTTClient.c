@@ -431,19 +431,19 @@ LOCAL void check_net_status(void *parm)
 	}
 	//TODO:
 	printf("check_net_status, %d\n", status);
-#if defined(MQTT_TASK)
-		MutexLock(&c->mutex);
-#endif
-		//FIXME:
-		if (c->fail_conn_count > 30)
-		{
-			printf("---------->\n");
-			system_restart();
-		}
-
-#if defined(MQTT_TASK)
-		MutexUnlock(&c->mutex);
-#endif
+//#if defined(MQTT_TASK)
+//		MutexLock(&c->mutex);
+//#endif
+//		//FIXME:
+//		if (c->fail_conn_count > 30)
+//		{
+//			printf("---------->\n");
+//			system_restart();
+//		}
+//
+//#if defined(MQTT_TASK)
+//		MutexUnlock(&c->mutex);
+//#endif
 	os_timer_arm(&monitor_wifi_timer, 60000, 0);
 }
 

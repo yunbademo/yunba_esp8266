@@ -23,7 +23,7 @@ typedef struct {
 #define LIGHT_DEV_NUM  10
 
 
-#if LIGHT_DEVICE
+#if defined(LIGHT_DEVICE)
 void light_EspnowInit();
 void light_EspnowDeinit();
 /*

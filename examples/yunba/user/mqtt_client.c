@@ -18,6 +18,8 @@
 
 #include "util.h"
 
+#define YUNBA_MQTT_VER   19
+
 //const char *DEV_ALIAS = "MN826W_34edb547_led0";
 //const char *DEV_ALIAS = "MN826W_34edb547_wirelesstag";
 
@@ -53,7 +55,7 @@ void messageArrived(MessageData* data)
 		if (strcmp(topic, parm.alias) == 0) {
 			cJSON *root = cJSON_Parse(buf);
 			//{p:period, r:red, g:green, b:blue}
-			if (root) {
+			if (root != NULL) {
 				int ret_size = cJSON_GetArraySize(root);
 #if defined(LIGHT_DEVICE)
 				if (ret_size >= 4) {
@@ -63,8 +65,19 @@ void messageArrived(MessageData* data)
 					uint16_t blue = cJSON_GetObjectItem(root,"b")->valueint;
 					printf("light parm:%d,%d, %d, %d\n", period, red, green, blue);
 					light_set_aim(red, green, blue, 0, 0, period);
-#endif
 				}
+#elif defined(PLUG_DEVICE)
+				if (ret_size >= 2) {
+					//uint16_t device_type = cJSON_GetObjectItem(root,"t")->valuestring;
+					cJSON * pJstatus = cJSON_GetObjectItem(root,"switch");
+					if (pJstatus != NULL) {
+						if(pJstatus->type == cJSON_Number){
+							printf("switch set\n");
+							user_plug_set_status(pJstatus->valueint);
+						}
+					}
+				}
+#endif
 				cJSON_Delete(root);
 			}
 		}
@@ -178,7 +191,7 @@ yunba_mqtt_client_task(void *pvParameters)
 
     	case ST_CONNECT:
     	{
-    		connectData.MQTTVersion = 19;
+    		connectData.MQTTVersion = YUNBA_MQTT_VER;
 			connectData.clientID.cstring = reg.client_id;
 			connectData.username.cstring = reg.username;
 			connectData.password.cstring = reg.password;
