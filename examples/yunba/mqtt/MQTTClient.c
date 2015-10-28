@@ -79,6 +79,7 @@ void ICACHE_FLASH_ATTR MQTTClientInit(MQTTClient* c, Network* network, unsigned 
     c->ping_outstanding = 0;
     c->defaultMessageHandler = NULL;
 	c->next_packetid = 1;
+	c->fail_conn_count = 0;
     TimerInit(&c->ping_timer);
 #if defined(MQTT_TASK)
 	MutexInit(&c->mutex);
@@ -231,10 +232,12 @@ int keepalive(MQTTClient* c)
             TimerInit(&timer);
             TimerCountdownMS(&timer, 1000);
             int len = MQTTSerialize_pingreq(c->buf, c->buf_size);
-            if (len > 0 && (rc = sendPacket(c, len, &timer)) == SUCCESS) // send the ping packet
+            if (len > 0 && (rc = sendPacket(c, len, &timer)) == SUCCESS) {// send the ping packet
                 c->ping_outstanding = 1;
-            else {
+                c->fail_conn_count = 0;
+            } else {
             	printf("------>ping sent fail\n");
+            	c->fail_conn_count++;
             	TimerCountdown(&c->ping_timer, 5);
             }
 
@@ -364,6 +367,7 @@ cycle(MQTTClient* c, Timer* timer)
         case PINGRESP:
         	printf("ping response\n");
             c->ping_outstanding = 0;
+            c->fail_conn_count = 0;
             break;
         case EXTCMD:
         {
@@ -427,6 +431,19 @@ LOCAL void check_net_status(void *parm)
 	}
 	//TODO:
 	printf("check_net_status, %d\n", status);
+#if defined(MQTT_TASK)
+		MutexLock(&c->mutex);
+#endif
+		//FIXME:
+		if (c->fail_conn_count > 30)
+		{
+			printf("---------->\n");
+			system_restart();
+		}
+
+#if defined(MQTT_TASK)
+		MutexUnlock(&c->mutex);
+#endif
 	os_timer_arm(&monitor_wifi_timer, 60000, 0);
 }
 

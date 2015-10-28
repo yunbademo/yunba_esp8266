@@ -53,7 +53,9 @@ smartconfig_done(sc_status status, void *pdata)
 
             }
             smartconfig_stop();
+#if defined(LIGHT_DEVICE)
             light_set_aim(APP_MAX_PWM, APP_MAX_PWM, APP_MAX_PWM, 0, APP_MAX_PWM, 1000);
+#endif
             xTaskCreate(yunba_mqtt_client_task,
             		"yunba_mqtt_client_task",
             		384,//configMINIMAL_STACK_SIZE * 7,
@@ -66,7 +68,9 @@ smartconfig_done(sc_status status, void *pdata)
 
 void smartconfig_task(void *pvParameters)
 {
+#if defined(LIGHT_DEVICE)
 	light_set_aim(APP_MAX_PWM, 0, 0, 0, APP_MAX_PWM, 1000);
+#endif
     printf("smartconfig_task start\n");
     smartconfig_start(smartconfig_done);
 

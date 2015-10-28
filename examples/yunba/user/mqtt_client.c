@@ -55,6 +55,7 @@ void messageArrived(MessageData* data)
 			//{p:period, r:red, g:green, b:blue}
 			if (root) {
 				int ret_size = cJSON_GetArraySize(root);
+#if defined(LIGHT_DEVICE)
 				if (ret_size >= 4) {
 					uint16_t period = cJSON_GetObjectItem(root,"p")->valueint;
 					uint16_t red = cJSON_GetObjectItem(root,"r")->valueint;
@@ -62,6 +63,7 @@ void messageArrived(MessageData* data)
 					uint16_t blue = cJSON_GetObjectItem(root,"b")->valueint;
 					printf("light parm:%d,%d, %d, %d\n", period, red, green, blue);
 					light_set_aim(red, green, blue, 0, 0, period);
+#endif
 				}
 				cJSON_Delete(root);
 			}

@@ -1,6 +1,7 @@
 #include "esp_common.h"
 #include "user_config.h"
 
+#if defined(LIGHT_DEVICE)
 #include "user_light.h"
 
 struct light_saved_param light_param;
@@ -111,3 +112,4 @@ void  user_light_init(void)
     pwm_set_duty(APP_MAX_PWM, LIGHT_BLUE);
 
 }
+#endif

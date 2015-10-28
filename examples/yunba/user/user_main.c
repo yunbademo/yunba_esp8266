@@ -27,7 +27,9 @@
 void ICACHE_FLASH_ATTR
 user_init(void)
 {
+#if defined(LIGHT_DEVICE)
 	user_light_init();
+#endif
 //	sem_yunba = xSemaphoreCreateMutex();
 //	xSemaphoreTake(sem_yunba, portMAX_DELAY);
     setup_wifi();

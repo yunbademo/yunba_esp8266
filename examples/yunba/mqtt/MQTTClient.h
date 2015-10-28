@@ -105,7 +105,7 @@ typedef struct MQTTClient
     unsigned int keepAliveInterval;
     char ping_outstanding;
     int isconnected;
-
+    uint8_t fail_conn_count;
     struct MessageHandlers
     {
         const char* topicFilter;

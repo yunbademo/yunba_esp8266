@@ -1,6 +1,6 @@
 #include "esp_common.h"
 
-#if LIGHT_DEVICE
+#if defined(LIGHT_DEVICE)
 
 #ifndef __USER_LIGHT_H__
 #define __USER_LIGHT_H__
