@@ -24,9 +24,14 @@
 //const char *DEV_ALIAS = "MN826W_34edb547_wirelesstag";
 
  USER_PARM_t parm;
+ LOCAL xQueueHandle QueueMQTTClient = NULL;
 
 const portTickType xDelay = 1000 / portTICK_RATE_MS;
 
+struct MSG_t {
+	uint8_t payload[30];
+	uint8_t len;
+};
 
 typedef enum {
 	ST_INIT, ST_CONNECT, ST_REG, ST_SUB, ST_PUBLISH, ST_RUNNING, ST_DIS, ST_RECONN
@@ -79,6 +84,11 @@ void messageArrived(MessageData* data)
 				}
 #endif
 				cJSON_Delete(root);
+
+				struct MSG_t m;
+				strcpy(m.payload, "baidu.com");
+				m.len = strlen("baidu.com");
+				xQueueSend(QueueMQTTClient, &m,100 / portTICK_RATE_MS);
 			}
 		}
 		free(topic);
@@ -157,6 +167,9 @@ yunba_mqtt_client_task(void *pvParameters)
     if (init_user_parm(&parm) == 0)
     	load_user_parm(&parm);
 
+    if (QueueMQTTClient == NULL)
+    	QueueMQTTClient = xQueueCreate(5, sizeof(struct MSG_t));
+
     pvParameters = 0;
     NetworkInit(&network);
     MQTTClientInit(&client, &network, 30000, sendbuf, 200 * sizeof(uint8_t), readbuf, 200 * sizeof(uint8_t));
@@ -177,7 +190,7 @@ yunba_mqtt_client_task(void *pvParameters)
 
     MQTTSetCallBack(&client, messageArrived, extMessageArrive);
 
-    for(;;) {
+    while (MQTT_State != ST_RUNNING) {
     	switch (MQTT_State) {
     	case ST_INIT:
     	{
@@ -261,6 +274,20 @@ yunba_mqtt_client_task(void *pvParameters)
                     printf("Return code from yield is %d\n", rc);
 #endif
     }
+
+    struct MSG_t M;
+	for (;;) {
+		if(xQueueReceive(QueueMQTTClient, &M, 100/portTICK_RATE_MS ) == pdPASS) {
+			MQTTMessage message;
+			message.qos = 1;
+			message.retained = 0;
+			memcpy(message.payload, M.payload, M.len);
+			message.payloadlen = M.len;
+			if ((rc = MQTTPublish(&client, parm.topic, &message)) != 0)
+				printf("Return code from MQTT publish is %d\n", rc);
+			printf("receive queue: %s, %d\n", M.payload, M.len);
+		}
+	}
 
     free(reg.client_id);
     free(reg.device_id);
