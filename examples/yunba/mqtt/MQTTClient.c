@@ -32,10 +32,8 @@ static void NewMessageData(MessageData* md, MQTTString* aTopicName, MQTTMessage*
 
 
 static uint64_t getNextPacketId(MQTTClient *c) {
-//	c->next_packetid = generate_uuid();
-//	return c->next_packetid;
-	//FIXME: should use generate_uuid function.
-	return c->next_packetid = (c->next_packetid == MAX_PACKET_ID) ? 1 : c->next_packetid + 1;
+	c->next_packetid = generate_uuid();
+	return c->next_packetid;
 }
 
 
@@ -336,14 +334,14 @@ cycle(MQTTClient* c, Timer* timer)
                 else if (msg.qos == QOS2)
                     len = MQTTSerialize_ack(c->buf, c->buf_size, PUBREC, 0, msg.id);
 
-                printf("send puback: %d\n", len);
+         //       printf("send puback: %d\n", len);
                 if (len <= 0)
                     rc = FAILURE;
                 else {
                 	//TimerCountdownMS(timer, 9000);
                     rc = sendPacket(c, len, timer);
                 }
-                printf("send pack rc: %d\n", rc);
+          //      printf("send pack rc: %d\n", rc);
                 deliverMessage(c, &topicName, &msg);
             }
             break;
@@ -964,4 +962,87 @@ int MQTTClient_presence(MQTTClient* c, char* topic)
 		free(buf);
 	}
 	return rc;
+}
+
+
+int MQTTPublish2(MQTTClient *c,
+		const char* topicName, void* payload, int payloadlen, cJSON *opt)
+{
+	const char *key[PUBLISH2_TLV_MAX_NUM] =
+	{"topic", "payload", "platform", "time_to_live", "time_delay", "location", "qos", "apn_json"};
+	uint8_t *p;
+	uint8_t *pub_buf = (uint8_t *)malloc(256);
+	uint16_t len, i = 0;
+	int rc;
+
+	if (pub_buf == NULL) return -1;
+
+	p = pub_buf;
+
+	*p++ = (uint8_t)PUBLISH2_TLV_PAYLOAD;
+	*p++ = (uint8_t)((payloadlen >> 8) & 0xff);
+	*p++ = (uint8_t)(payloadlen & 0xff);
+	memcpy(p, payload, payloadlen);
+	p += payloadlen;
+
+	len = strlen(topicName);
+	*p++ = (uint8_t)PUBLISH2_TLV_TOPIC;
+	*p++ = (uint8_t)((len >> 8) & 0xff);
+	*p++ = (uint8_t)(len & 0xff);
+	memcpy(p, topicName, len);
+	p += len;
+
+	if (opt) {
+		uint8_t j = 0;
+		int size = cJSON_GetArraySize(opt);
+		for (j = 0; j < size; j++) {
+			cJSON * test = cJSON_GetArrayItem(opt, j);
+			uint8_t i = 0;
+			for (i = 0; i < PUBLISH2_TLV_MAX_NUM; i++) {
+				if (strcmp(test->string, key[i]) == 0) {
+					switch (i) {
+					case PUBLISH2_TLV_TTL:
+					case PUBLISH2_TLV_TIME_DELAY:
+					case PUBLISH2_TLV_QOS:
+					{
+						*p++ = (uint8_t)i;
+						*p++ = 0;
+						*p++ = 2;
+						memcpy(p, test->valuestring, 2);
+						p += 2;
+						break;
+					}
+
+					case PUBLISH2_TLV_APN_JSON:
+					{
+						len = strlen(test->valuestring);
+						*p++ = (uint8_t)PUBLISH2_TLV_APN_JSON;
+						*p++ = (uint8_t)((len >> 8) & 0xff);
+						*p++ = (uint8_t)(len & 0xff);
+						memcpy(p, test->valuestring, len);
+						p += len;
+						break;
+					}
+
+					default:
+						break;
+					}
+				}
+			}
+		}
+	}
+
+	rc = MQTTExtendedCmd(c, PUBLISH2, pub_buf, p-pub_buf, /*DEFAULT_QOS*/QOS2, DEFAULT_RETAINED);
+
+	free(pub_buf);
+	return rc;
+}
+
+int MQTTPublish2ToAlias(MQTTClient *c,
+				const char* alias, void* payload, int payloadlen, cJSON *opt)
+{
+	char buf[150];
+
+	sprintf(buf, ",yta/%s", alias);
+	return MQTTPublish2(c, buf, payload, payloadlen, opt);
 }

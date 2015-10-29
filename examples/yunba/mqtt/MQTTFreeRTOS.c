@@ -312,7 +312,7 @@ exit:
 //}
 
 uint64_t generate_uuid() {
-        uint64_t system_time = system_get_time();
+        uint64_t system_time = (uint64_t)system_get_time();
 //        uint64_t id = utc << (64 - 41);
 //        id |= (uint64_t)(randm(16) % (unsigned long long int)(pow(2, (64 - 41))));
         return system_time;

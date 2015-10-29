@@ -2,10 +2,6 @@
 
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
-
-//#include "lwip/sockets.h"
-//#include "lwip/dns.h"
-//#include "lwip/netdb.h"
 #include "smartconfig.h"
 #include "user_config.h"
 #include "util.h"

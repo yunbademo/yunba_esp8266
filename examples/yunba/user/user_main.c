@@ -1,20 +1,12 @@
-/******************************************************************************
- * Copyright 2013-2014 Espressif Systems (Wuxi)
+/*
+ * user_main.c
  *
- * FileName: user_main.c
- *
- * Description: entry file of user application
- *
- * Modification history:
- *     2014/12/1, v1.0 create this file.
-*******************************************************************************/
+ *  Created on: Oct 22, 2015
+ *      Author: yunba
+ */
 #include "esp_common.h"
-
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
-
-
-#include "user_smartconfig.h"
 #include "mqtt_client.h"
 #include "util.h"
 

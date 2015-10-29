@@ -36,6 +36,7 @@
 #include "esp_common.h"
 #include "MQTTPacket.h"
 #include "MQTTFreeRTOS.h"
+#include "json/cJSON.h"
 //#include "stdio.h"
 
 #if defined(MQTTCLIENT_PLATFORM_HEADER)
@@ -217,6 +218,12 @@ DLLExport int MQTTGetAlias(MQTTClient* c, const char *param);
 DLLExport int MQTTSetCallBack(MQTTClient *c, messageHandler cb, extendedmessageHandler ext_cb);
 
 DLLExport int MQTTClient_presence(MQTTClient* c, char* topic);
+
+DLLExport int MQTTPublish2(MQTTClient *c,
+		const char* topicName, void* payload, int payloadlen, cJSON *opt);
+
+DLLExport int MQTTPublish2ToAlias(MQTTClient *c,
+				const char* alias, void* payload, int payloadlen, cJSON *opt);
 
 #if defined(__cplusplus)
      }
