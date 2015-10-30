@@ -22,5 +22,7 @@ int8_t init_user_parm(USER_PARM_t *user_parm);
 int8_t load_user_parm(USER_PARM_t *user_parm);
 void user_parm_free(USER_PARM_t *user_parm);
 
+void setup_wifi_monitor(os_timer_func_t * fn, void *arg, uint32_t msec);
+void wifi_monitor_close(void);
 
 #endif /* UTIL_H_ */

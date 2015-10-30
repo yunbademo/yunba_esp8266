@@ -7,6 +7,7 @@
 #include "esp_common.h"
 #include "util.h"
 
+LOCAL os_timer_t wifi_monitor_timer;
 
 int8_t init_user_parm(USER_PARM_t *user_parm)
 {
@@ -48,9 +49,21 @@ int8_t load_user_parm(USER_PARM_t *user_parm)
 */
 	//TODO:
 	strcpy(user_parm->appkey, "55fceaa34a481fa955f3955f");
-	strcpy(user_parm->deviceid, "8655e6662f24bc87cce198300344f3ee");
+	strcpy(user_parm->deviceid, "a0d6a312ae54856a7c35106a215950d7");
 	strcpy(user_parm->topic, "MN826W_34edb547");
-	strcpy(user_parm->alias, "MN826W_34edb547_plug1");
+	strcpy(user_parm->alias, "MN826W_34edb547_plug2");
 	user_parm->aliveinterval = 30;
 	return 0;
+}
+
+void setup_wifi_monitor(os_timer_func_t * fn, void *arg, uint32_t msec)
+{
+    os_timer_disarm(&wifi_monitor_timer);
+    os_timer_setfn(&wifi_monitor_timer, fn, arg);
+    os_timer_arm(&wifi_monitor_timer, msec, true);
+}
+
+void wifi_monitor_close(void)
+{
+	os_timer_disarm(&wifi_monitor_timer);
 }

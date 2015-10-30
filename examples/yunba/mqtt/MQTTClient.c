@@ -20,10 +20,29 @@
 #define HTTP_TIMEOUT 3000
 #define MEM_LEN 256
 
-LOCAL os_timer_t monitor_wifi_timer;
 
 static int deliverextMessage(MQTTClient* c, EXTED_CMD cmd, int status, int ret_string_len, char *ret_string);
 
+static void mqttclient_disconnect_internal(MQTTClient* c);
+
+
+void ICACHE_FLASH_ATTR mqtt_lost_call(void* parm)
+{
+	MQTTClient* c = (MQTTClient*)parm;
+	//TODO:
+	char *reason = "sent fail";
+	if (c->cl != NULL) {
+		(*(c->cl))(reason);
+	}
+	vTaskDelete(NULL);
+}
+
+static void mqttclient_disconnect_internal(MQTTClient* client)
+{
+#if defined(MQTT_TASK)
+	ThreadStart(&client->thread, &mqtt_lost_call, client);
+#endif
+}
 
 static void NewMessageData(MessageData* md, MQTTString* aTopicName, MQTTMessage* aMessage) {
     md->topicName = aTopicName;
@@ -35,7 +54,6 @@ static uint64_t getNextPacketId(MQTTClient *c) {
 	c->next_packetid = generate_uuid();
 	return c->next_packetid;
 }
-
 
 static int sendPacket(MQTTClient* c, int length, Timer* timer)
 {
@@ -53,9 +71,10 @@ static int sendPacket(MQTTClient* c, int length, Timer* timer)
         TimerCountdown(&c->ping_timer, c->keepAliveInterval); // record the fact that we have successfully sent the packet
         rc = SUCCESS;
     }
-    else
+    else {
+    	printf("send packet fail: %d, %d, %d\n", rc, sent, length);
         rc = FAILURE;
-
+    }
     return rc;
 }
 
@@ -78,6 +97,7 @@ void ICACHE_FLASH_ATTR MQTTClientInit(MQTTClient* c, Network* network, unsigned 
     c->defaultMessageHandler = NULL;
 	c->next_packetid = 1;
 	c->fail_conn_count = 0;
+	c->cl = NULL;
     TimerInit(&c->ping_timer);
 #if defined(MQTT_TASK)
 	MutexInit(&c->mutex);
@@ -235,8 +255,10 @@ int keepalive(MQTTClient* c)
                 c->fail_conn_count = 0;
             } else {
             	printf("------>ping sent fail\n");
-            	c->fail_conn_count++;
-            	TimerCountdown(&c->ping_timer, 5);
+				if (c->fail_conn_count++ > 20)
+					mqttclient_disconnect_internal(c);
+				else
+					TimerCountdown(&c->ping_timer, 20);
             }
 
          //   printf("keeplive: %d, %d\n", len, rc);
@@ -418,41 +440,6 @@ int MQTTYield(MQTTClient* c, int timeout_ms)
     return rc;
 }
 
-LOCAL void check_net_status(void *parm)
-{
-	MQTTClient *c = (MQTTClient *)parm;
-	static uint8_t pre_status = 255;
-	uint8_t status = wifi_station_get_connect_status();
-	if (pre_status != status) {
-		pre_status = status;
-		printf("wifi status change: %d\n", status);
-	}
-	//TODO:
-	printf("check_net_status, %d\n", status);
-//#if defined(MQTT_TASK)
-//		MutexLock(&c->mutex);
-//#endif
-//		//FIXME:
-//		if (c->fail_conn_count > 30)
-//		{
-//			printf("---------->\n");
-//			system_restart();
-//		}
-//
-//#if defined(MQTT_TASK)
-//		MutexUnlock(&c->mutex);
-//#endif
-	os_timer_arm(&monitor_wifi_timer, 60000, 0);
-}
-
-LOCAL void setup_monitor_net(MQTTClient *c)
-{
-    os_timer_disarm(&monitor_wifi_timer);
-    os_timer_setfn(&monitor_wifi_timer, (os_timer_func_t *)check_net_status, c);
-    os_timer_arm(&monitor_wifi_timer, 60000, 0);
-}
-
-
 void ICACHE_FLASH_ATTR MQTTRun(void* parm)
 {
 	Timer timer;
@@ -460,7 +447,6 @@ void ICACHE_FLASH_ATTR MQTTRun(void* parm)
 	os_printf("MQTTRun\n");
 	TimerInit(&timer);
 
-	setup_monitor_net(c);
 	while (1)
 	{
 #if defined(MQTT_TASK)
@@ -929,7 +915,7 @@ int deliverextMessage(MQTTClient* c, EXTED_CMD cmd, int status, int ret_string_l
 	    return rc;
 }
 
-int MQTTSetCallBack(MQTTClient *c, messageHandler cb, extendedmessageHandler ext_cb)
+int MQTTSetCallBack(MQTTClient *c, messageHandler cb, extendedmessageHandler ext_cb, mqttConnectLostHandler cl)
 {
 	int rc = SUCCESS;
 #if defined(MQTT_TASK)
@@ -940,6 +926,8 @@ int MQTTSetCallBack(MQTTClient *c, messageHandler cb, extendedmessageHandler ext
 
 	c->messageHandlers[0].topicFilter = 0;
 	c->messageHandlers[0].fp = cb;
+
+	c->cl = cl;
 #if defined(MQTT_TASK)
 		MutexUnlock(&c->mutex);
 #endif

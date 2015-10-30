@@ -94,6 +94,7 @@ typedef struct MessageData
 
 typedef void (*messageHandler)(MessageData*);
 typedef void (*extendedmessageHandler)(EXTED_CMD cmd, int status, int ret_string_len, char *ret_string);
+typedef void (*mqttConnectLostHandler)(char *reaseon);
 
 typedef struct MQTTClient
 {
@@ -120,12 +121,14 @@ typedef struct MQTTClient
     }  extmessageHandlers[MAX_MESSAGE_HANDLERS];
 
     void (*defaultMessageHandler) (MessageData*);
+    mqttConnectLostHandler cl;
 
     Network* ipstack;
     Timer ping_timer;
 #if defined(MQTT_TASK)
 	Mutex mutex;
 	Thread thread;
+	Thread conn_lost_thread;
 #endif 
 } MQTTClient;
 
@@ -215,7 +218,7 @@ DLLExport int MQTTPublishToAlias(MQTTClient* c, const char* alias, void *payload
 
 DLLExport int MQTTGetAlias(MQTTClient* c, const char *param);
 
-DLLExport int MQTTSetCallBack(MQTTClient *c, messageHandler cb, extendedmessageHandler ext_cb);
+DLLExport int MQTTSetCallBack(MQTTClient *c, messageHandler cb, extendedmessageHandler ext_cb, mqttConnectLostHandler cl);
 
 DLLExport int MQTTClient_presence(MQTTClient* c, char* topic);
 

@@ -15,6 +15,9 @@
  USER_PARM_t parm;
  LOCAL xQueueHandle QueueMQTTClient = NULL;
 
+ MQTTClient client;
+ MQTTPacket_connectData connectData = MQTTPacket_connectData_initializer;
+
 const portTickType xDelay = 1000 / portTICK_RATE_MS;
 
 struct MSG_t {
@@ -100,6 +103,24 @@ static void extMessageArrive(EXTED_CMD cmd, int status, int ret_string_len, char
 	}
 }
 
+static void mqttConnectLost(char *reaseon)
+{
+	int rc = MQTTConnect(&client, &connectData);
+	printf("mqtt connect lost, reconnect:%d\n", rc);
+}
+
+LOCAL void check_wifi_status(void *parm)
+{
+	MQTTClient *c = (MQTTClient *)parm;
+	static uint8_t pre_status = 255;
+	uint8_t status = wifi_station_get_connect_status();
+	if (pre_status != status) {
+		pre_status = status;
+		printf("wifi status change: %d\n", status);
+	}
+	printf("wifi status, %d\n", status);
+}
+
 static int get_ip_pair(const char *url, char *addr, uint16_t *port)
 {
 	char *p = strstr(url, "tcp://");
@@ -145,16 +166,15 @@ void yunba_get_mqtt_broker(char *appkey, char *deviceid, char *broker_addr, uint
 void ICACHE_FLASH_ATTR
 yunba_mqtt_client_task(void *pvParameters)
 {
-    MQTTClient client;
     Network network;
     int rc = 0, count = 0;
     uint8_t *sendbuf = (uint8_t *)malloc(200);
     uint8_t *readbuf = (uint8_t *)malloc(200);
 
-    MQTTPacket_connectData connectData = MQTTPacket_connectData_initializer;
-
     if (init_user_parm(&parm) == 0)
     	load_user_parm(&parm);
+
+    setup_wifi_monitor(check_wifi_status, NULL, 6000);
 
     if (QueueMQTTClient == NULL)
     	QueueMQTTClient = xQueueCreate(5, sizeof(struct MSG_t));
@@ -177,7 +197,7 @@ yunba_mqtt_client_task(void *pvParameters)
     printf("get reg info: cid:%s, username:%d, password:%s, devid:%s\n",
     		reg.client_id, reg.username, reg.password, reg.device_id);
 
-    MQTTSetCallBack(&client, messageArrived, extMessageArrive);
+    MQTTSetCallBack(&client, messageArrived, extMessageArrive, mqttConnectLost);
 
     while (MQTT_State != ST_RUNNING) {
     	switch (MQTT_State) {
@@ -218,7 +238,6 @@ yunba_mqtt_client_task(void *pvParameters)
     		break;
 
     	case ST_SUB:
-    		MQTTClient_presence(&client, parm.topic);
     		MQTTSetAlias(&client, parm.alias);
         	MQTT_State = ST_RUNNING;
     		break;
